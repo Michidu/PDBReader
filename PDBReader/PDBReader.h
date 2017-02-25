@@ -39,6 +39,7 @@ const char* const rgBaseType[] =
 };
 
 bool LoadDataFromPdb(IDiaDataSource**, IDiaSession**, IDiaSymbol**);
+std::wstring GetCurrentDir();
 bool ReadJson();
 void DumpStructs(IDiaSymbol*);
 char* ConvertBSTRToLPSTR(BSTR);

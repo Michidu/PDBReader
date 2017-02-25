@@ -1,8 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <atlcomcli.h>
+#include <Pathcch.h>
 #include "PDBReader.h"
 #include "json.hpp"
+
+#pragma comment(lib, "Pathcch.lib")
 
 const char* fileName = "ShooterGameServer.exe";
 
@@ -11,14 +14,14 @@ nlohmann::json jsonConfig, jsonDump;
 
 int main(int argc, char* argv[])
 {
-	FILE* pFile;
-	if (fopen_s(&pFile, fileName, "r") || !pFile)
+	std::wstring fullPath = GetCurrentDir() + L"/ShooterGameServer.pdb";
+
+	std::ifstream f(fullPath);
+	if (!f.good())
 	{
 		std::cerr << "Failed to open pdb file";
 		return -1;
 	}
-
-	fclose(pFile);
 
 	IDiaDataSource* pDiaDataSource;
 	IDiaSession* pDiaSession;
@@ -42,9 +45,24 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+std::wstring GetCurrentDir()
+{
+	wchar_t buffer[MAX_PATH];
+	GetModuleFileNameW(nullptr, buffer, sizeof(buffer));
+
+	PathCchRemoveFileSpec(buffer, sizeof(buffer));
+
+	std::wstring dirPath(buffer);
+
+	return dirPath;
+}
+
 bool LoadDataFromPdb(IDiaDataSource** ppSource, IDiaSession** ppSession, IDiaSymbol** ppSymbol)
 {
-	HMODULE hModule = LoadLibraryA("msdia140.dll");
+	std::wstring dirPath = GetCurrentDir();
+
+	std::wstring fullLibPath = dirPath + L"/msdia140.dll";
+	HMODULE hModule = LoadLibraryW(fullLibPath.c_str());
 	if (!hModule)
 	{
 		std::cerr << "Failed to load msdia140.dll - " << GetLastError() << std::endl;
@@ -74,7 +92,8 @@ bool LoadDataFromPdb(IDiaDataSource** ppSource, IDiaSession** ppSession, IDiaSym
 		return false;
 	}
 
-	hr = (*ppSource)->loadDataFromPdb(L"ShooterGameServer.pdb");
+	std::wstring fullPdbPath = dirPath + L"/ShooterGameServer.pdb";
+	hr = (*ppSource)->loadDataFromPdb(fullPdbPath.c_str());
 	if (FAILED(hr))
 	{
 		printf("loadDataFromPdb failed - HRESULT = %08X\n", hr);
@@ -105,7 +124,9 @@ bool LoadDataFromPdb(IDiaDataSource** ppSource, IDiaSession** ppSession, IDiaSym
 bool ReadJson()
 {
 	std::ifstream file;
-	file.open("config.json");
+
+	std::wstring fullPath = GetCurrentDir() + L"/config.json";
+	file.open(fullPath);
 	if (!file.is_open())
 	{
 		std::cerr << "Failed to open config.json";
@@ -332,7 +353,10 @@ void DumpFunction(IDiaSymbol* pSymbol, const std::string& structure)
 void WriteJson()
 {
 	std::ofstream file;
-	file.open("dump.json");
+
+	std::wstring fullPath = GetCurrentDir() + L"/dump.json";
+
+	file.open(fullPath);
 	file << jsonDump.dump(1);
 	file.close();
 }
