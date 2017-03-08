@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
 	}
 
 	DumpStructs(pSymbol);
+	DumpFreeFunctions(pSymbol);
 	WriteJson();
 	Cleanup(pSymbol, pDiaSession);
 
@@ -141,7 +142,7 @@ bool ReadJson()
 
 void DumpStructs(IDiaSymbol* pgSymbol)
 {
-	IDiaSymbol *pSymbol;
+	IDiaSymbol* pSymbol;
 
 	std::cout << "Dumping structures..\n\n";
 
@@ -171,6 +172,51 @@ void DumpStructs(IDiaSymbol* pgSymbol)
 		if (findRes != structsArray.end())
 		{
 			DumpType(pSymbol, strName, 0);
+		}
+
+		SysFreeString(bstrName);
+
+		pSymbol->Release();
+	}
+
+	pEnumSymbols->Release();
+}
+
+void DumpFreeFunctions(IDiaSymbol* pgSymbol)
+{
+	IDiaSymbol* pSymbol;
+
+	std::cout << "Dumping functions..\n\n";
+
+	auto funcsArray = jsonConfig["functions"].get<std::vector<std::string>>();
+
+	IDiaEnumSymbols* pEnumSymbols;
+
+	if (FAILED(pgSymbol->findChildren(SymTagFunction, nullptr, nsNone, &pEnumSymbols)))
+	{
+		return;
+	}
+
+	ULONG celt = 0;
+
+	while (SUCCEEDED(pEnumSymbols->Next(1, &pSymbol, &celt)) && celt == 1)
+	{
+		BSTR bstrName;
+		if (pSymbol->get_name(&bstrName) != S_OK)
+			continue;
+
+		char* pszConvertedCharStr = ConvertBSTRToLPSTR(bstrName);
+		std::string strName(pszConvertedCharStr);
+		delete[] pszConvertedCharStr;
+
+		auto findRes = std::find(funcsArray.begin(), funcsArray.end(), strName);
+		if (findRes != funcsArray.end())
+		{
+			DWORD dwOffset;
+			if (pSymbol->get_addressOffset(&dwOffset) != S_OK)
+				return;
+
+			jsonDump["structures"]["Global"][strName] = dwOffset;
 		}
 
 		SysFreeString(bstrName);

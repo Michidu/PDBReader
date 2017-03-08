@@ -42,6 +42,7 @@ bool LoadDataFromPdb(IDiaDataSource**, IDiaSession**, IDiaSymbol**);
 std::wstring GetCurrentDir();
 bool ReadJson();
 void DumpStructs(IDiaSymbol*);
+void DumpFreeFunctions(IDiaSymbol*);
 char* ConvertBSTRToLPSTR(BSTR);
 void DumpType(IDiaSymbol*, const std::string&, int);
 void DumpData(IDiaSymbol*, const std::string&);
