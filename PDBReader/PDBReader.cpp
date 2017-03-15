@@ -1,11 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <atlcomcli.h>
-#include <Pathcch.h>
 #include "PDBReader.h"
 #include "json.hpp"
-
-#pragma comment(lib, "Pathcch.lib")
 
 const char* fileName = "ShooterGameServer.exe";
 
@@ -49,13 +46,10 @@ int main(int argc, char* argv[])
 std::wstring GetCurrentDir()
 {
 	wchar_t buffer[MAX_PATH];
-	GetModuleFileNameW(nullptr, buffer, sizeof(buffer));
+	GetModuleFileName(nullptr, buffer, MAX_PATH);
+	std::wstring::size_type pos = std::wstring(buffer).find_last_of(L"\\/");
 
-	PathCchRemoveFileSpec(buffer, sizeof(buffer));
-
-	std::wstring dirPath(buffer);
-
-	return dirPath;
+	return std::wstring(buffer).substr(0, pos);
 }
 
 bool LoadDataFromPdb(IDiaDataSource** ppSource, IDiaSession** ppSession, IDiaSymbol** ppSymbol)
